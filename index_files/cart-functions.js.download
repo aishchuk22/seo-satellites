@@ -1,0 +1,304 @@
+document.addEventListener('DOMContentLoaded', function() {
+    /**
+     * @returns {Promise<any>}
+     */
+    async function sendApiRequest(endPoint, data)
+    {
+        let result = null;
+        let formData = new FormData();
+        for (let key in data) {
+            formData.append(key, data[key]);
+        }
+        await fetch(endPoint, {
+            method: 'POST',
+            body: formData,
+        })
+            .then(response => {
+                if (!response.ok)
+                    throw new Error('Failed to complete request');
+
+                return response.json();
+            })
+            .then(responseData => {
+                result = responseData.success
+            });
+        return result;
+    }
+
+    function updateStoredItemsNumber()
+    {
+        const storedOffersNumber = getItemsNumber();
+        if (storedOffersNumber > 0) {
+            const cartBox = document.querySelector('.ph-cart-box');
+            const cartBoxCounter = cartBox.querySelector('span');
+            cartBox.classList.remove('is-hidden');
+            cartBoxCounter.classList.remove('is-hidden');
+            cartBoxCounter.innerText = storedOffersNumber;
+        }
+    }
+
+    function getItemsNumber()
+    {
+        let number = 0;
+        let storedOffers = JSON.parse(localStorage.getItem('cartData')) || {};
+        Object.values(storedOffers).forEach(function (offer) {
+            number = number + offer.number;
+        });
+        return number;
+    }
+
+    function showAddedToCartMessage()
+    {
+        const messageBox = document.querySelector('.ph-cart-msg');
+        const productImage = document.querySelector('.dnk-introduktion img');
+        const icon = messageBox.querySelector('img');
+        const imageHref = productImage.getAttribute('src');
+        icon.setAttribute('src', imageHref);
+        messageBox.classList.add('show-cart-msg');
+        setTimeout(function() {
+            messageBox.classList.remove('show-cart-msg');
+        }, 4000);
+    }
+
+    async function changeQuantity(button)
+    {
+        const id = button.closest('tr').getAttribute('id');
+        let quantity = button.closest('tr').querySelector('.ch-quantity .count').innerText;
+        quantity = parseInt(quantity);
+        await sendApiRequest('/api/v1/', {id: id, quantity: quantity, action: 'change'});
+        let storedOffers = JSON.parse(localStorage.getItem('cartData')) || {};
+        let storedOffer = storedOffers[id];
+        storedOffer.number = quantity;
+        storedOffers[id] = storedOffer;
+        localStorage.cartData = JSON.stringify(storedOffers);
+        window.location = window.location.href.split("#")[0];
+    }
+
+    async function applyCoupon()
+    {
+        const coupon = document.querySelector('#coupon').value;
+        await sendApiRequest('/api/v1/', {coupon: coupon, action: 'coupon'});
+        window.location = window.location.href.split("#")[0];
+    }
+
+    function getCookie(name)
+    {
+        let value = `; ${document.cookie}`;
+        let parts = value.split(`; ${name}=`);
+        if (parts.length === 2) {
+            return parts.pop().split(';').shift();
+        }
+        return null;
+    }
+
+    function processCheckout() {
+        if (localStorage.cartData) {
+            const url = '/checkout/';
+            const cartData = JSON.parse(localStorage.cartData);
+            const form = document.createElement('form');
+            form.action = url;
+            form.method = 'POST';
+            form.style.display = 'none';
+            Object.values(cartData).forEach((item, index) => {
+                const inputId = document.createElement('input');
+                inputId.type = 'hidden';
+                inputId.name = `products[${index}][id]`;
+                inputId.value = item.id;
+                form.appendChild(inputId)
+
+                const inputTitle = document.createElement('input');
+                inputTitle.type = 'hidden';
+                inputTitle.name = `products[${index}][title]`;
+                inputTitle.value = item.title;
+                form.appendChild(inputTitle);
+
+                const inputQuantity = document.createElement('input');
+                inputQuantity.type = 'hidden';
+                inputQuantity.name = `products[${index}][quantity]`;
+                inputQuantity.value = item.quantity;
+                form.appendChild(inputQuantity);
+
+                const inputDosage = document.createElement('input');
+                inputDosage.type = 'hidden';
+                inputDosage.name = `products[${index}][dosage]`;
+                inputDosage.value = item.dosage;
+                form.appendChild(inputDosage);
+
+                const inputPrice = document.createElement('input');
+                inputPrice.type = 'hidden';
+                inputPrice.name = `products[${index}][price]`;
+                inputPrice.value = item.price;
+                form.appendChild(inputPrice);
+
+                const inputNumber = document.createElement('input');
+                inputNumber.type = 'hidden';
+                inputNumber.name = `products[${index}][number]`;
+                inputNumber.value = item.number;
+                form.appendChild(inputNumber);
+            });
+
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+
+    const buyButtons = document.querySelectorAll('.ph-buy .btn');
+    if (buyButtons.length > 0) {
+        updateStoredItemsNumber();
+        buyButtons.forEach(function (buyButton) {
+            buyButton.addEventListener('click', function () {
+                let offerId = buyButton.getAttribute('data');
+                let offerTitle = buyButton.closest('tr').querySelector('.ph-product span.title').getAttribute('data-name');
+                let offerQuantity = buyButton.closest('tr').querySelector('.ph-product span.quantity').innerText;
+                let offerDosage = buyButton.closest('tr').querySelector('.ph-product span.dosage').innerText;
+                let offerPrice = buyButton.closest('tr').querySelector('.ph-price span.price').innerText;
+
+                const offerData = {
+                    id: offerId,
+                    title: offerTitle,
+                    quantity: offerQuantity,
+                    dosage: offerDosage,
+                    price: offerPrice
+                };
+
+                let storedOffers = JSON.parse(localStorage.getItem('cartData')) || {};
+                let number = buyButton.closest('tr').querySelector('.count').innerText;
+                number = parseInt(number);
+                if (storedOffers[offerId]) {
+                    number = storedOffers[offerId].number + number;
+                }
+
+                offerData.number = number;
+                storedOffers[offerId] = offerData;
+
+                localStorage.setItem('cartData', JSON.stringify(storedOffers));
+                showAddedToCartMessage();
+                updateStoredItemsNumber();
+            });
+        });
+    }
+
+    let increaseQuantity = document.querySelectorAll('.ph-table .increase');
+    increaseQuantity.forEach(function (element) {
+        element.addEventListener('click', function (event) {
+            let quantity = parseInt(event.target.previousElementSibling.innerText);
+            quantity++;
+            event.target.previousElementSibling.innerText = quantity;
+        });
+    });
+
+    let decreaseQuantity = document.querySelectorAll('.ph-table .decrease');
+    decreaseQuantity.forEach(function (element) {
+        element.addEventListener('click', function (event) {
+            let quantity = parseInt(event.target.nextElementSibling.innerText);
+            if (quantity > 1) {
+                quantity--;
+                event.target.nextElementSibling.innerText = quantity;
+            }
+        });
+    });
+
+    let processCheckoutButton = document.querySelector('.ph-cart-box');
+    if (processCheckoutButton) {
+        processCheckoutButton.addEventListener('click', processCheckout);
+    }
+
+    let processPreCheckoutButton = document.querySelector('.ph-cart-msg');
+    if (processPreCheckoutButton) {
+        processPreCheckoutButton.addEventListener('click', processCheckout);
+    }
+
+    const useShippingAddressAsBilling = document.querySelector('#billing_as_shipping');
+    if (useShippingAddressAsBilling) {
+        useShippingAddressAsBilling.addEventListener('click', function () {
+            const billingBox = document.querySelector('#billingBox');
+            const requiredInputs = ['bill_first_name', 'bill_last_name', 'bill_zip', 'bill_city', 'bill_address'];
+            if (useShippingAddressAsBilling.checked) {
+                billingBox.classList.remove('is-block');
+                billingBox.classList.add('is-hidden');
+                requiredInputs.forEach(function (input) {
+                    document.querySelector('#' + input).removeAttribute('required');
+                });
+            } else {
+                billingBox.classList.remove('is-hidden');
+                billingBox.classList.add('is-block');
+                requiredInputs.forEach(function (input) {
+                    document.querySelector('#' + input).setAttribute('required', 'true');
+                });
+            }
+        })
+    }
+
+    const removeItemButtons = document.querySelectorAll('.remove-item');
+    if (removeItemButtons.length > 0) {
+        removeItemButtons.forEach(function (removeItemButton) {
+            removeItemButton.addEventListener('click', async function () {
+                const id = removeItemButton.closest('tr').getAttribute('id');
+                await sendApiRequest('/api/v1/', {id: id, action: 'delete'});
+                let storedOffers = JSON.parse(localStorage.getItem('cartData')) || {};
+                delete storedOffers[id];
+                localStorage.cartData = JSON.stringify(storedOffers);
+                window.location = window.location.href.split("#")[0];
+            });
+        });
+    }
+
+    const increaseQuantityButtons = document.querySelectorAll('.ch-quantity .increase');
+    if (increaseQuantityButtons.length > 0) {
+        increaseQuantityButtons.forEach(function (increaseQuantityButton) {
+            increaseQuantityButton.addEventListener('click', async function (event) {
+                let quantity = parseInt(event.target.previousElementSibling.innerText);
+                quantity++;
+                event.target.previousElementSibling.innerText = quantity;
+                await changeQuantity(increaseQuantityButton);
+            });
+        });
+    }
+
+    const decreaseQuantityButtons = document.querySelectorAll('.ch-quantity .decrease');
+    if (decreaseQuantityButtons.length > 0) {
+        decreaseQuantityButtons.forEach(function (decreaseQuantityButton) {
+            decreaseQuantityButton.addEventListener('click', async function (event) {
+                let quantity = parseInt(event.target.nextElementSibling.innerText);
+                if (quantity > 1) {
+                    quantity--;
+                    event.target.nextElementSibling.innerText = quantity;
+                }
+                await changeQuantity(decreaseQuantityButton);
+            });
+        });
+    }
+
+    const applyCouponButton = document.querySelector('#apply-coupon');
+    if (applyCouponButton) {
+        applyCouponButton.addEventListener('click', async function () {
+            await applyCoupon();
+        });
+    }
+
+    const cardNumber = document.querySelector('#card_number');
+    if (cardNumber) {
+        cardNumber.addEventListener('input', function (event) {
+            let cardNumberValue = event.target.value;
+            cardNumberValue = cardNumberValue.replace(/\s/g, '');
+            event.target.value = cardNumberValue.replace(/\d{4}(?=\d)/g, '$& ');
+        });
+    }
+
+    const deliveryMethods = document.querySelectorAll('.shipping_method');
+    if (deliveryMethods) {
+        let selectedDeliveryMethod = getCookie('selectedDeliveryMethod');
+        deliveryMethods.forEach(function (deliveryMethod) {
+            if (deliveryMethod.value === selectedDeliveryMethod) {
+                deliveryMethod.checked = true;
+            }
+            deliveryMethod.addEventListener('click', function (event) {
+                const selectedValue = event.target.value;
+                document.cookie = `selectedDeliveryMethod=${selectedValue}; path=/;`;
+                window.location = window.location.href.split("#")[0];
+            });
+        });
+    }
+
+});
+
