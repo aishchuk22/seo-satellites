@@ -2494,6 +2494,22 @@ fieldset[disabled] .button {
   margin-bottom: 8px;
 }
 
+.dnk-com-name {
+  position: relative;
+  margin-left: 60px;
+}
+
+.dnk-com-name::before {
+  position: absolute;
+  content: "";
+  width: 30px;
+  height: 30px;
+  background: url("./avatar.png"), no-repeat center;
+  left: -40px;
+  top: 0px;
+  background-size: cover;
+}
+
 @media screen and (min-width: 769px) {
   .new-image1 {
     display: inline-block;
