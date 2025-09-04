@@ -55,3 +55,5 @@
 24. added svg before "Hvad Koster Viagra Uden Recept?" to emphisize on cost info
 
 25. added some photos with media (squoshed them, but did not do retina, since not critical for elderly people)
+
+26. added png avatar for commentaries for more realistic visualisation
