@@ -51,3 +51,7 @@
 22. deleted random <br> in comments that created extra gaps
 
 23. dnk-main increased paddings left and right 0.5rem -> 1rem
+
+24. added svg before "Hvad Koster Viagra Uden Recept?" to emphisize on cost info
+
+25. added some photos with media (squoshed them, but did not do retina, since not critical for elderly people)

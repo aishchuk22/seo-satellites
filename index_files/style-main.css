@@ -2462,18 +2462,19 @@ fieldset[disabled] .button {
 }
 
 .new-image1 {
+  display: none;
   float: right;
-  width: 300px;
-  height: 240px;
-  margin: 0px 10px 0px 14px;
+  width: 260px;
+  height: 220px;
+  margin: 0px 10px 0px 6px;
   border-radius: 30px;
 }
 
 .new-image2 {
+  display: none;
   float: right;
   width: 400px;
   height: 350px;
-  margin: 0px 40px 0px 14px;
   border-radius: 30px;
 }
 
@@ -2491,4 +2492,43 @@ fieldset[disabled] .button {
 
 .div-with-svg svg {
   margin-bottom: 8px;
+}
+
+@media screen and (min-width: 769px) {
+  .new-image1 {
+    display: inline-block;
+  }
+
+  .new-image2 {
+    display: inline-block;
+    width: 300px;
+    margin: 10px 20px 0px 14px;
+  }
+}
+
+@media screen and (min-width: 1088px) {
+  .new-image1 {
+    width: 300px;
+    margin: 0px 10px;
+  }
+
+  .new-image2 {
+    width: 350px;
+    height: auto;
+    margin: 0px 20px 0px 14px;
+  }
+}
+
+@media screen and (min-width: 1280px) {
+  .new-image1 {
+    width: 350px;
+    height: 260px;
+    margin: 10px 10px 0px 16px;
+  }
+
+  .new-image2 {
+    width: 400px;
+    height: auto;
+    margin: 10px 20px 0px 14px;
+  }
 }
